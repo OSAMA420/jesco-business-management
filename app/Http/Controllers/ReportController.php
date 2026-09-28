@@ -105,7 +105,7 @@ class ReportController extends Controller
             return [
                 'label' => $start->format('M'),
                 'value' => (float) Order::with('items')->where('status', '!=', 'cancelled')
-                    ->whereBetween('order_date', [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()])
+                    ->whereDate('order_date', '>=', $start->toDateString())->whereDate('order_date', '<=', $start->copy()->endOfMonth()->toDateString())
                     ->get()->sum(fn (Order $o) => $o->total()),
             ];
         });

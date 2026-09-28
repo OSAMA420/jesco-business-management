@@ -99,7 +99,7 @@ class FinanceController extends Controller
         $monthly = collect(range(5, 0))->map(function (int $ago) {
             $start = now()->startOfMonth()->subMonthsNoOverflow($ago);
             $between = fn (string ...$types) => Transaction::whereIn('type', $types)
-                ->whereBetween('transaction_date', [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()]);
+                ->whereDate('transaction_date', '>=', $start->toDateString())->whereDate('transaction_date', '<=', $start->copy()->endOfMonth()->toDateString());
 
             return [
                 'month' => $start->format('M'),

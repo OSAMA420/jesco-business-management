@@ -22,71 +22,50 @@ Alpine.data('counter', (target = 0, prefix = '', suffix = '') => ({
     },
 }));
 
-Alpine.data('salesDashboard', () => {
-    // Chart.js instances stay outside Alpine's reactive object on purpose:
+/**
+ * Line chart with a 7 days / 30 days / 12 months toggle.
+ * periods: { '7d': { labels: [...], series: { key: [numbers] } }, ... }
+ * series:  [{ key, label, color, money }] in categorical order.
+ */
+Alpine.data('trendChart', (periods, series) => {
+    // The Chart.js instance stays outside Alpine's reactive object on purpose:
     // Alpine deep-proxies returned state, and Chart.js instances hold circular
     // internal references that blow the call stack when proxied.
-    let salesChart = null;
-    let statusChart = null;
-
-    const datasets = {
-        '7d': { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], data: [62000, 81000, 74000, 95000, 88000, 132000, 118000] },
-        '30d': { labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], data: [420000, 380000, 510000, 465000] },
-        '12m': { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'], data: [780000, 820000, 910000, 860000, 940000, 1010000, 980000, 1120000, 1245000] },
-    };
+    let chart = null;
+    const format = (s, v) => (s.money ? 'Rs. ' : '') + Number(v).toLocaleString('en-US') + (s.money ? '' : ' units');
+    const build = (p) => series.map((s) => ({
+        label: s.label,
+        data: periods[p].series[s.key],
+        borderColor: s.color,
+        backgroundColor: series.length === 1 ? s.color + '14' : 'transparent',
+        fill: series.length === 1,
+        tension: 0.3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: s.color,
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        borderWidth: 2,
+    }));
 
     return {
         period: '7d',
 
         init() {
-            const d = datasets[this.period];
-
-            salesChart = new Chart(this.$refs.salesCanvas.getContext('2d'), {
+            chart = new Chart(this.$refs.canvas.getContext('2d'), {
                 type: 'line',
-                data: {
-                    labels: d.labels,
-                    datasets: [{
-                        label: 'Sales',
-                        data: d.data,
-                        borderColor: '#e90f08',
-                        backgroundColor: 'rgba(233,15,8,0.08)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#e90f08',
-                        borderWidth: 2,
-                    }],
-                },
+                data: { labels: periods[this.period].labels, datasets: build(this.period) },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: (c) => 'Rs. ' + c.parsed.y.toLocaleString('en-US') } },
+                        legend: { display: series.length > 1, position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, font: { size: 11 } } },
+                        tooltip: { callbacks: { label: (c) => series[c.datasetIndex].label + ': ' + format(series[c.datasetIndex], c.parsed.y) } },
                     },
                     scales: {
-                        y: { ticks: { callback: (v) => (v / 1000) + 'k' }, grid: { color: '#f3f4f6' } },
-                        x: { grid: { display: false } },
-                    },
-                },
-            });
-
-            statusChart = new Chart(this.$refs.statusCanvas.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Delivered', 'Processing', 'Pending', 'Cancelled'],
-                    datasets: [{
-                        data: [68, 24, 21, 15],
-                        backgroundColor: ['#10b981', '#0ea5e9', '#f59e0b', '#f43f5e'],
-                        borderWidth: 0,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14, font: { size: 11 } } },
+                        y: { beginAtZero: true, ticks: { callback: (v) => (v >= 1000 ? (v / 1000) + 'k' : v), color: '#9ca3af', precision: 0 }, grid: { color: '#f3f4f6' }, border: { display: false } },
+                        x: { grid: { display: false }, ticks: { color: '#6b7280' } },
                     },
                 },
             });
@@ -94,10 +73,9 @@ Alpine.data('salesDashboard', () => {
 
         setPeriod(p) {
             this.period = p;
-            const d = datasets[p];
-            salesChart.data.labels = d.labels;
-            salesChart.data.datasets[0].data = d.data;
-            salesChart.update();
+            chart.data.labels = periods[p].labels;
+            chart.data.datasets = build(p);
+            chart.update();
         },
     };
 });
