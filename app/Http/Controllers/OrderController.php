@@ -150,6 +150,17 @@ class OrderController extends Controller
         return view('orders.show', compact('order'));
     }
 
+    public function invoice(Order $order): View
+    {
+        $order->load(['customer', 'items.product', 'transactions']);
+
+        return view('orders.invoice', [
+            'order' => $order,
+            'invoiceNumber' => 'INV-'.str_replace('ORD-', '', $order->order_number),
+            'company' => config('jesco'),
+        ]);
+    }
+
     public function edit(Order $order): View
     {
         $order->load('customer');

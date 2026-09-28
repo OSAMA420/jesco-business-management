@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:orders')->group(function () {
         Route::resource('orders', OrderController::class);
+        Route::get('/orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
         Route::post('/orders/{order}/payments', [OrderController::class, 'storePayment'])->name('orders.payments.store');
         Route::delete('/orders/{order}/payments/{payment}', [OrderController::class, 'destroyPayment'])->name('orders.payments.destroy');
     });
