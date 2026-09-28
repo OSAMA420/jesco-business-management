@@ -10,7 +10,7 @@ class Transaction extends Model
 {
     protected $fillable = [
         'type', 'reference_type', 'reference_id',
-        'customer_id', 'supplier_id', 'description',
+        'customer_id', 'supplier_id', 'description', 'category', 'payment_method',
         'amount', 'status', 'transaction_date',
     ];
 

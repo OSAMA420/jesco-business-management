@@ -50,7 +50,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('role:finance')->group(function () {
-        Route::resource('finance', FinanceController::class);
+        Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+        Route::post('/finance/expenses', [FinanceController::class, 'storeExpense'])->name('finance.expenses.store');
+        Route::put('/finance/expenses/{expense}', [FinanceController::class, 'updateExpense'])->name('finance.expenses.update');
+        Route::delete('/finance/expenses/{expense}', [FinanceController::class, 'destroyExpense'])->name('finance.expenses.destroy');
     });
 
     Route::middleware('role:reports')->group(function () {

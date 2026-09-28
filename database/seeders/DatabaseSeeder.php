@@ -198,7 +198,7 @@ class DatabaseSeeder extends Seeder
         // A standalone business expense
         Transaction::updateOrCreate(
             ['type' => 'expense', 'description' => 'Electricity Bill'],
-            ['amount' => -14200, 'status' => 'paid', 'transaction_date' => now()->subDays(2)]
+            ['amount' => -14200, 'status' => 'paid', 'transaction_date' => now()->subDays(2), 'category' => 'utilities', 'payment_method' => 'bank']
         );
     }
 }
