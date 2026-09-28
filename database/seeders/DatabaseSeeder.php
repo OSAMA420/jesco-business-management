@@ -160,6 +160,7 @@ class DatabaseSeeder extends Seeder
                     'product_id' => $product->id,
                     'quantity' => $line['qty'],
                     'unit_price' => $product->selling_price,
+                    'unit_cost' => $product->cost_price,
                 ]);
 
                 $total += $item->quantity * $item->unit_price;

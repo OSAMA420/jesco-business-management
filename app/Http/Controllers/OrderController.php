@@ -92,6 +92,7 @@ class OrderController extends Controller
                         'product_id' => $product->id,
                         'quantity' => $line['quantity'],
                         'unit_price' => $line['unit_price'],
+                        'unit_cost' => $product->cost_price,
                     ]);
 
                     $total += $item->quantity * $item->unit_price;

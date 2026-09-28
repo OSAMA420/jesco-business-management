@@ -12,8 +12,8 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased bg-gray-50 text-gray-900">
-    <div x-data="{ sidebarOpen: false }" class="flex h-screen overflow-hidden">
+<body class="font-sans antialiased bg-gray-50 text-gray-900 print:bg-white">
+    <div x-data="{ sidebarOpen: false }" class="flex h-screen overflow-hidden print:block print:h-auto print:overflow-visible">
 
         <!-- Mobile overlay -->
         <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"
@@ -21,7 +21,7 @@
 
         <!-- Sidebar -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-               class="fixed z-40 inset-y-0 left-0 w-64 bg-slate-900 text-slate-200 flex flex-col transition-transform duration-200 ease-in-out lg:static lg:translate-x-0">
+               class="fixed z-40 inset-y-0 left-0 w-64 bg-slate-900 text-slate-200 flex flex-col transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden">
 
             <div class="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
                 <span class="text-3xl leading-none text-jesco-500" style="font-family: 'Dancing Script', cursive;">Jesco</span>
@@ -126,9 +126,9 @@
         </aside>
 
         <!-- Main -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex-1 flex flex-col overflow-hidden print:overflow-visible">
             <!-- Topbar -->
-            <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 shrink-0">
+            <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 shrink-0 print:hidden">
                 <div class="flex items-center gap-3">
                     <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden text-gray-500 hover:text-gray-700">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
@@ -161,7 +161,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50 print:overflow-visible print:p-0 print:bg-white">
                 {{ $slot }}
             </main>
         </div>

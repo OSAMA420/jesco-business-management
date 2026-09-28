@@ -205,7 +205,8 @@ class PurchaseController extends Controller
         $purchase->load('items');
 
         foreach ($purchase->items as $item) {
-            Product::whereKey($item->product_id)->increment('stock_quantity', $item->quantity);
+            // The latest purchase price becomes the product's cost, used for profit on future sales.
+            Product::whereKey($item->product_id)->increment('stock_quantity', $item->quantity, ['cost_price' => $item->unit_cost]);
 
             StockMovement::create([
                 'product_id' => $item->product_id,

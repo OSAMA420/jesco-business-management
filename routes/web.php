@@ -57,7 +57,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('role:reports')->group(function () {
-        Route::resource('reports', ReportController::class)->only(['index']);
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/{report}', [ReportController::class, 'show'])->whereIn('report', array_keys(ReportController::REPORTS))->name('reports.show');
+        Route::get('/reports/{report}/csv', [ReportController::class, 'csv'])->whereIn('report', array_keys(ReportController::REPORTS))->name('reports.csv');
     });
 
     Route::middleware('role:users')->group(function () {
