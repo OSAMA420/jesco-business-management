@@ -1,0 +1,21 @@
+kind: wasmer.io/App.v0
+name: jesco-inventory
+owner: osamaahmed7134
+package: .
+capabilities:
+  database:
+    engine: mysql
+locality:
+  regions:
+    - fr-roub1
+env:
+  APP_NAME: JESCO
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: https://jesco-inventory.wasmer.app
+  DB_CONNECTION: mysql
+  LOG_CHANNEL: stderr
+  SESSION_DRIVER: database
+  CACHE_STORE: database
+  QUEUE_CONNECTION: sync
+  VIEW_COMPILED_PATH: /tmp/views
