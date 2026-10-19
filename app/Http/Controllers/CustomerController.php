@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Support\PartyPayment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -50,6 +51,20 @@ class CustomerController extends Controller
         return redirect()->route('customers.show', $customer)->with('status', 'Customer added successfully.');
     }
 
+    /**
+     * Adds a customer from the New Order form without leaving the page.
+     */
+    public function quickStore(Request $request): JsonResponse
+    {
+        $customer = Customer::create($this->validateCustomer($request));
+
+        return response()->json([
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'company' => $customer->company,
+        ], 201);
+    }
+
     public function show(Customer $customer): View
     {
         $customer->loadCount('orders');
@@ -61,8 +76,9 @@ class CustomerController extends Controller
         $transactions = $customer->transactions()->latest('transaction_date')->get();
         $balance = $customer->balance();
         $totalSpent = (float) $customer->transactions()->where('type', 'sale')->sum('amount');
+        $totalPaid = (float) $customer->transactions()->where('type', 'payment_in')->sum('amount');
 
-        return view('customers.show', compact('customer', 'orders', 'transactions', 'balance', 'totalSpent', 'openInvoices'));
+        return view('customers.show', compact('customer', 'orders', 'transactions', 'balance', 'totalSpent', 'totalPaid', 'openInvoices'));
     }
 
     public function edit(Customer $customer): View

@@ -22,6 +22,7 @@ class PasswordResetTest extends TestCase
     public function test_reset_password_link_can_be_requested(): void
     {
         Notification::fake();
+        config(['mail.default' => 'smtp']); // the email flow only runs once a real mailer is configured
 
         $user = User::factory()->create();
 
@@ -33,6 +34,7 @@ class PasswordResetTest extends TestCase
     public function test_reset_password_screen_can_be_rendered(): void
     {
         Notification::fake();
+        config(['mail.default' => 'smtp']); // the email flow only runs once a real mailer is configured
 
         $user = User::factory()->create();
 
@@ -50,6 +52,7 @@ class PasswordResetTest extends TestCase
     public function test_password_can_be_reset_with_valid_token(): void
     {
         Notification::fake();
+        config(['mail.default' => 'smtp']); // the email flow only runs once a real mailer is configured
 
         $user = User::factory()->create();
 

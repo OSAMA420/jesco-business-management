@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -27,6 +28,7 @@ class PartyPayment
             'payment_amount' => ['required', 'numeric', 'min:1'],
             'payment_date' => ['required', 'date'],
             'payment_note' => ['nullable', 'string', 'max:255'],
+            ...Transaction::paymentMethodRules(),
         ]);
 
         if ($data['apply_to'] === 'auto') {
@@ -58,7 +60,11 @@ class PartyPayment
                 }
 
                 $portion = min($bill->balanceDue(), $remaining);
-                $bill->recordPayment($portion, $data['payment_date'], $data['payment_note'] ?? null);
+                $bill->recordPayment($portion, $data['payment_date'], [
+                    'note' => $data['payment_note'] ?? null,
+                    'method' => $data['payment_method'],
+                    'reference' => $data['payment_reference'] ?? null,
+                ]);
                 $remaining = round($remaining - $portion, 2);
             }
         });

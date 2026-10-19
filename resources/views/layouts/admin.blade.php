@@ -24,7 +24,7 @@
                class="fixed z-40 inset-y-0 left-0 w-64 bg-slate-900 text-slate-200 flex flex-col transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 print:hidden">
 
             <div class="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
-                <span class="text-3xl leading-none text-jesco-500" style="font-family: 'Dancing Script', cursive;">Jesco</span>
+                <a href="{{ route('dashboard') }}" aria-label="Jesco dashboard"><x-jesco-logo class="h-9" /></a>
             </div>
 
             <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">

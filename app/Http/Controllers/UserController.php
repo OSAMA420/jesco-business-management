@@ -36,7 +36,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', Rule::in(array_keys(User::ROLES))],
-        ]);
+        ], ['email.unique' => $this->emailTakenMessage($request)]);
 
         User::create([
             'name' => $data['name'],
@@ -60,7 +60,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:8'],
             'role' => ['required', Rule::in(array_keys(User::ROLES))],
-        ]);
+        ], ['email.unique' => $this->emailTakenMessage($request)]);
 
         if ($user->id === $request->user()->id && $data['role'] !== User::ROLE_ADMIN && $user->isLastRemainingAdmin()) {
             return back()->with('error', 'You are the only admin. Assign another admin before changing your own role.');
@@ -92,5 +92,17 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('status', 'User removed.');
+    }
+
+    /**
+     * Says who already has the email, so it's clear the account still exists.
+     */
+    private function emailTakenMessage(Request $request): string
+    {
+        $owner = User::where('email', (string) $request->input('email'))->first();
+
+        return $owner
+            ? "{$owner->name} already uses this email. Edit or delete that user in the Users list, or use a different email."
+            : 'This email is already in use.';
     }
 }

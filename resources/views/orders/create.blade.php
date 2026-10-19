@@ -5,6 +5,55 @@
          x-data="{
             items: [{ product_id: '', quantity: 1, unit_price: 0 }],
             amountPaid: {{ (float) old('amount_paid', 0) }},
+            customers: @js($customers->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'company' => $c->company])->values()),
+            customerId: @js((string) old('customer_id', '')),
+            newCustomerOpen: false,
+            newCustomer: { name: '', company: '', phone: '', email: '', address: '' },
+            newCustomerErrors: {},
+            savingCustomer: false,
+            customerLabel(c) { return c.name + (c.company ? ' (' + c.company + ')' : ''); },
+            onCustomerChange(event) {
+                if (event.target.value !== '__new') {
+                    this.customerId = event.target.value;
+                    return;
+                }
+                // Not a real choice: put back whatever was selected before and open the popup.
+                event.target.value = this.customerId;
+                this.newCustomer = { name: '', company: '', phone: '', email: '', address: '' };
+                this.newCustomerErrors = {};
+                this.newCustomerOpen = true;
+                this.$nextTick(() => this.$refs.newCustomerName.focus());
+            },
+            async saveCustomer() {
+                this.savingCustomer = true;
+                this.newCustomerErrors = {};
+                try {
+                    const response = await fetch(@js(route('customers.quick-store')), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        },
+                        body: JSON.stringify(this.newCustomer),
+                    });
+                    const data = await response.json();
+                    if (response.status === 422) {
+                        this.newCustomerErrors = data.errors;
+                        return;
+                    }
+                    if (!response.ok) throw new Error();
+                    this.customers.push(data);
+                    this.customers.sort((a, b) => a.name.localeCompare(b.name));
+                    this.customerId = String(data.id);
+                    this.$nextTick(() => { this.$refs.customerSelect.value = this.customerId; });
+                    this.newCustomerOpen = false;
+                } catch (e) {
+                    this.newCustomerErrors = { name: ['Could not save the customer. Please try again.'] };
+                } finally {
+                    this.savingCustomer = false;
+                }
+            },
             products: @js($products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'sku' => $p->sku, 'price' => (float) $p->selling_price, 'stock' => $p->stock_quantity])),
             addItem() { this.items.push({ product_id: '', quantity: 1, unit_price: 0 }); },
             removeItem(i) { if (this.items.length > 1) this.items.splice(i, 1); },
@@ -43,11 +92,13 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div>
                         <label for="customer_id" class="block text-sm font-medium text-gray-700 mb-1.5">Customer</label>
-                        <select id="customer_id" name="customer_id" required class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+                        <select id="customer_id" name="customer_id" required x-ref="customerSelect" @change="onCustomerChange($event)"
+                                class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
                             <option value="">Select a customer</option>
-                            @foreach($customers as $customer)
-                                <option value="{{ $customer->id }}" @selected(old('customer_id') == $customer->id)>{{ $customer->name }} @if($customer->company) ({{ $customer->company }}) @endif</option>
-                            @endforeach
+                            <option value="__new" class="font-medium text-jesco-600">+ Add new customer</option>
+                            <template x-for="c in customers" :key="c.id">
+                                <option :value="String(c.id)" :selected="String(c.id) === customerId" x-text="customerLabel(c)"></option>
+                            </template>
                         </select>
                     </div>
 
@@ -74,12 +125,15 @@
                         <input type="number" id="amount_paid" name="amount_paid" x-model.number="amountPaid" min="0" step="0.01" :max="total()"
                                class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
                         @error('amount_paid') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
+                        <div class="mt-3" x-cloak :class="Number(amountPaid) > 0 ? '' : 'hidden'">
+                            <x-payment-method-fields method-name="paid_method" reference-name="paid_reference" id-prefix="paid" />
+                        </div>
                         <p class="mt-1.5 text-xs text-gray-500">
                             Payment status:
                             <span class="font-medium"
                                   :class="{ 'text-emerald-600': paymentStatus() === 'paid', 'text-amber-600': paymentStatus() === 'partial', 'text-rose-600': paymentStatus() === 'unpaid' }"
                                   x-text="paymentStatus().charAt(0).toUpperCase() + paymentStatus().slice(1)"></span>
-                            <span x-show="paymentStatus() === 'partial'" x-text="'(Rs. ' + (total() - amountPaid).toLocaleString('en-US') + ' due)'"></span>
+                            <span x-show="paymentStatus() === 'partial'" x-text="'(Rs. ' + Math.max(0, total() - amountPaid).toLocaleString('en-US') + ' due)'"></span>
                         </p>
                     </div>
 
@@ -155,5 +209,54 @@
                 <x-btn type="submit">Create Order</x-btn>
             </div>
         </form>
+        <!-- Add new customer popup -->
+        <div x-show="newCustomerOpen" x-cloak class="fixed inset-0 z-50" @keydown.escape.window="newCustomerOpen = false">
+            <div x-show="newCustomerOpen" x-transition.opacity @click="newCustomerOpen = false" class="fixed inset-0 bg-gray-900/50"></div>
+            <div class="fixed inset-0 flex items-center justify-center p-4">
+                <div x-show="newCustomerOpen" x-transition class="relative w-full max-w-lg bg-white rounded-xl shadow-xl p-6">
+                    <h3 class="text-base font-semibold text-gray-900">Add New Customer</h3>
+                    <p class="mt-1 text-sm text-gray-500">They'll be selected for this order. Items you've already added stay as they are.</p>
+
+                    <form @submit.prevent="saveCustomer()" class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="new_customer_name" class="block text-sm font-medium text-gray-700 mb-1.5">Customer Name</label>
+                            <input type="text" id="new_customer_name" x-ref="newCustomerName" x-model="newCustomer.name" required
+                                   class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+                            <template x-if="newCustomerErrors.name"><p class="mt-1.5 text-sm text-rose-600" x-text="newCustomerErrors.name[0]"></p></template>
+                        </div>
+                        <div>
+                            <label for="new_customer_company" class="block text-sm font-medium text-gray-700 mb-1.5">Company / Workshop</label>
+                            <input type="text" id="new_customer_company" x-model="newCustomer.company"
+                                   class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+                            <template x-if="newCustomerErrors.company"><p class="mt-1.5 text-sm text-rose-600" x-text="newCustomerErrors.company[0]"></p></template>
+                        </div>
+                        <div>
+                            <label for="new_customer_phone" class="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
+                            <input type="text" id="new_customer_phone" x-model="newCustomer.phone" placeholder="0300-1234567"
+                                   class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+                            <template x-if="newCustomerErrors.phone"><p class="mt-1.5 text-sm text-rose-600" x-text="newCustomerErrors.phone[0]"></p></template>
+                        </div>
+                        <div>
+                            <label for="new_customer_email" class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                            <input type="email" id="new_customer_email" x-model="newCustomer.email"
+                                   class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+                            <template x-if="newCustomerErrors.email"><p class="mt-1.5 text-sm text-rose-600" x-text="newCustomerErrors.email[0]"></p></template>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="new_customer_address" class="block text-sm font-medium text-gray-700 mb-1.5">Address</label>
+                            <textarea id="new_customer_address" x-model="newCustomer.address" rows="2"
+                                      class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500"></textarea>
+                            <template x-if="newCustomerErrors.address"><p class="mt-1.5 text-sm text-rose-600" x-text="newCustomerErrors.address[0]"></p></template>
+                        </div>
+                        <div class="sm:col-span-2 pt-1 flex justify-end gap-2">
+                            <x-btn type="button" variant="secondary" @click="newCustomerOpen = false">Cancel</x-btn>
+                            <x-btn type="submit" ::disabled="savingCustomer" class="disabled:opacity-60">
+                                <span x-text="savingCustomer ? 'Saving...' : 'Save Customer'"></span>
+                            </x-btn>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </x-app-layout>

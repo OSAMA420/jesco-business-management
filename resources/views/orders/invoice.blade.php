@@ -44,7 +44,7 @@
         <!-- Header -->
         <header class="flex items-start justify-between gap-6 pb-6 border-b-2 border-jesco-600">
             <div>
-                <p class="text-5xl leading-none text-jesco-600" style="font-family: 'Dancing Script', cursive;">Jesco</p>
+                <x-jesco-logo class="h-16" />
                 <p class="mt-2 text-sm font-semibold text-gray-900">{{ $company['legal_name'] }}</p>
                 <p class="text-xs text-gray-600 max-w-xs">{{ $company['address'] }}</p>
                 <p class="text-xs text-gray-600">
@@ -124,7 +124,9 @@
                         @foreach($payments as $payment)
                             <li class="flex justify-between gap-6">
                                 {{-- The migration's internal note isn't meant for customers. --}}
-                                <span>{{ $payment->transaction_date->format('d M Y') }} &middot; {{ Str::startsWith((string) $payment->description, 'Paid in full (recorded before') ? 'Payment received' : $payment->description }}</span>
+                                <span>{{ $payment->transaction_date->format('d M Y') }}
+                                    &middot; {{ $payment->methodLabel() ?? (Str::startsWith((string) $payment->description, 'Paid in full (recorded before') ? 'Payment received' : $payment->description) }}
+                                    @if($payment->reference_no) ({{ $payment->reference_no }}) @endif</span>
                                 <span class="whitespace-nowrap">Rs. {{ number_format(abs($payment->amount)) }}</span>
                             </li>
                         @endforeach

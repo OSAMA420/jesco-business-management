@@ -22,8 +22,7 @@
         <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
             Password {{ $user ? '(leave blank to keep current)' : '' }}
         </label>
-        <input type="password" id="password" name="password" {{ $user ? '' : 'required' }}
-               class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+        <x-password-input id="password" name="password" autocomplete="new-password" :required="! $user" />
         @error('password') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
     </div>
 
@@ -36,7 +35,7 @@
         </select>
         @error('role') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
         <p class="mt-1.5 text-xs text-gray-500">
-            Admin: full access &middot; Manager: products, inventory, customers, orders, finance &amp; reports &middot;
+            Admin: full access &middot; Manager: everything except Users &middot;
             Sales Staff: customers &amp; orders only &middot; Warehouse Staff: inventory only.
         </p>
     </div>

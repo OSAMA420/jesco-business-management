@@ -119,10 +119,10 @@ class PurchaseFlowTest extends TestCase
     {
         $this->createPurchase('received');
 
-        $this->post(route('suppliers.payments.store', $this->supplier), ['apply_to' => 'auto', 'payment_amount' => 90000, 'payment_date' => '2026-09-26'])
+        $this->post(route('suppliers.payments.store', $this->supplier), ['payment_method' => 'cash', 'apply_to' => 'auto', 'payment_amount' => 90000, 'payment_date' => '2026-09-26'])
             ->assertSessionHasErrors('payment_amount');
 
-        $this->post(route('suppliers.payments.store', $this->supplier), ['apply_to' => 'auto', 'payment_amount' => 30000, 'payment_date' => '2026-09-26'])
+        $this->post(route('suppliers.payments.store', $this->supplier), ['payment_method' => 'cash', 'apply_to' => 'auto', 'payment_amount' => 30000, 'payment_date' => '2026-09-26'])
             ->assertRedirect(route('suppliers.show', $this->supplier));
 
         $this->assertEquals(40000, $this->supplier->balance());

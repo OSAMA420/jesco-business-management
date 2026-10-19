@@ -52,9 +52,13 @@ class Order extends Model
         return $this->status !== 'cancelled';
     }
 
-    public function recordPayment(float $amount, string $date, ?string $note = null): Transaction
+    /**
+     * @param  array{note?: ?string, method?: ?string, reference?: ?string}  $details
+     */
+    public function recordPayment(float $amount, string $date, array $details = []): Transaction
     {
-        $payment = $this->newPayment($amount, $date, $note ?: 'Payment received', 'customer_id', $this->customer_id);
+        $details['note'] = ($details['note'] ?? null) ?: 'Payment received';
+        $payment = $this->newPayment($amount, $date, $details, 'customer_id', $this->customer_id);
         $this->syncPaymentStatus();
 
         return $payment;

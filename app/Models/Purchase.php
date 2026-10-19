@@ -52,9 +52,13 @@ class Purchase extends Model
         return $this->status === 'received';
     }
 
-    public function recordPayment(float $amount, string $date, ?string $note = null): Transaction
+    /**
+     * @param  array{note?: ?string, method?: ?string, reference?: ?string}  $details
+     */
+    public function recordPayment(float $amount, string $date, array $details = []): Transaction
     {
-        $payment = $this->newPayment($amount, $date, $note ?: 'Payment made', 'supplier_id', $this->supplier_id);
+        $details['note'] = ($details['note'] ?? null) ?: 'Payment made';
+        $payment = $this->newPayment($amount, $date, $details, 'supplier_id', $this->supplier_id);
         $this->syncPaymentStatus();
 
         return $payment;

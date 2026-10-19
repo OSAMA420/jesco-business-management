@@ -22,7 +22,7 @@
             <div class="pointer-events-none absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-jesco-700/20 rounded-full blur-3xl animate-glow-pulse" style="animation-delay: 2s;"></div>
             <div class="pointer-events-none absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 24px 24px;"></div>
 
-            <span class="relative text-4xl" style="font-family: 'Dancing Script', cursive;">Jesco</span>
+            <x-jesco-logo class="relative h-12 self-start" />
 
             <div class="relative space-y-8 max-w-md">
                 <h1 class="text-4xl font-bold leading-tight min-h-[5.5rem]"
@@ -81,7 +81,7 @@
             <div class="w-full max-w-sm animate-fade-in-up">
 
                 <div class="lg:hidden mb-8 text-center">
-                    <span class="text-4xl text-jesco-600" style="font-family: 'Dancing Script', cursive;">Jesco</span>
+                    <x-jesco-logo class="h-12 mx-auto" />
                 </div>
 
                 <h2 class="text-2xl font-bold text-gray-900">Welcome back</h2>

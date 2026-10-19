@@ -19,6 +19,11 @@
                 <a href="{{ route('purchases.create', ['supplier' => $supplier->id]) }}">
                     <x-btn type="button" variant="secondary">New Purchase</x-btn>
                 </a>
+                @if(auth()->user()->canAccess('reports'))
+                    <a href="{{ route('reports.show', ['report' => 'supplier-statement', 'supplier' => $supplier->id]) }}">
+                        <x-btn type="button" variant="secondary">Statement</x-btn>
+                    </a>
+                @endif
                 <a href="{{ route('suppliers.edit', $supplier->id) }}">
                     <x-btn type="button" variant="secondary">Edit Supplier</x-btn>
                 </a>
@@ -113,6 +118,7 @@
                             <tr class="text-left text-xs text-gray-500 uppercase tracking-wide bg-gray-50">
                                 <th class="px-5 py-3 font-medium">Date</th>
                                 <th class="px-5 py-3 font-medium">Details</th>
+                                <th class="px-5 py-3 font-medium">Paid Via</th>
                                 <th class="px-5 py-3 font-medium">Amount</th>
                                 <th class="px-5 py-3 font-medium">Status</th>
                             </tr>
@@ -124,6 +130,16 @@
                                 <td class="px-5 py-3">
                                     <p class="text-gray-800">{{ $t->type === 'payment_out' ? 'Payment made' : 'Purchase' }}</p>
                                     <p class="text-xs text-gray-500">{{ $t->description }}</p>
+                                </td>
+                                <td class="px-5 py-3 whitespace-nowrap">
+                                    @if($t->methodLabel())
+                                        <p class="text-gray-800">{{ $t->methodLabel() }}</p>
+                                        @if($t->reference_no)<p class="text-xs text-gray-500">Ref: {{ $t->reference_no }}</p>@endif
+                                    @elseif(in_array($t->type, ['payment_in', 'payment_out']))
+                                        <span class="text-xs text-gray-400">Not recorded</span>
+                                    @else
+                                        <span class="text-gray-400">—</span>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-3 font-medium whitespace-nowrap {{ $t->type === 'payment_out' ? 'text-emerald-600' : 'text-rose-600' }}">
                                     Rs. {{ number_format(abs($t->amount)) }}
@@ -142,7 +158,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="4" class="px-5 py-10 text-center text-gray-500">No transactions yet.</td>
+                                <td colspan="5" class="px-5 py-10 text-center text-gray-500">No transactions yet.</td>
                             </tr>
                             @endforelse
                         </tbody>

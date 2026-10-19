@@ -76,12 +76,15 @@
                         <input type="number" id="amount_paid" name="amount_paid" x-model.number="amountPaid" min="0" step="0.01" :max="total()"
                                class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
                         @error('amount_paid') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
+                        <div class="mt-3" x-cloak :class="Number(amountPaid) > 0 ? '' : 'hidden'">
+                            <x-payment-method-fields method-name="paid_method" reference-name="paid_reference" id-prefix="paid" />
+                        </div>
                         <p class="mt-1.5 text-xs text-gray-500">
                             Payment status:
                             <span class="font-medium"
                                   :class="{ 'text-emerald-600': paymentStatus() === 'paid', 'text-amber-600': paymentStatus() === 'partial', 'text-rose-600': paymentStatus() === 'unpaid' }"
                                   x-text="paymentStatus().charAt(0).toUpperCase() + paymentStatus().slice(1)"></span>
-                            <span x-show="paymentStatus() === 'partial'" x-text="'(Rs. ' + (total() - amountPaid).toLocaleString('en-US') + ' due)'"></span>
+                            <span x-show="paymentStatus() === 'partial'" x-text="'(Rs. ' + Math.max(0, total() - amountPaid).toLocaleString('en-US') + ' due)'"></span>
                         </p>
                     </div>
 

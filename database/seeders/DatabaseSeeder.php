@@ -109,7 +109,7 @@ class DatabaseSeeder extends Seeder
                 'transaction_date' => $purchase->purchase_date,
             ]);
 
-            $purchase->recordPayment($item->quantity * $item->unit_cost, $purchase->purchase_date->toDateString(), 'Bank transfer');
+            $purchase->recordPayment($item->quantity * $item->unit_cost, $purchase->purchase_date->toDateString(), ['method' => 'bank', 'reference' => 'IBFT 20481']);
         }
 
         // Orders: sales to customers
@@ -191,7 +191,7 @@ class DatabaseSeeder extends Seeder
 
                 $paid = $data['paid'] === 'full' ? $total : $data['paid'];
                 if ($paid > 0) {
-                    $order->recordPayment($paid, $order->order_date->toDateString(), 'Cash');
+                    $order->recordPayment($paid, $order->order_date->toDateString(), ['method' => 'cash']);
                 }
             }
         }

@@ -59,6 +59,8 @@ class OrderController extends Controller
             'order_date' => ['required', 'date'],
             'status' => ['required', Rule::in(self::STATUSES)],
             'amount_paid' => ['nullable', 'numeric', 'min:0'],
+            'paid_method' => ['nullable', Rule::in(array_keys(Transaction::PAYMENT_METHODS))],
+            'paid_reference' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
@@ -130,7 +132,11 @@ class OrderController extends Controller
                         ]);
                     }
                     if ($paidNow > 0) {
-                        $order->recordPayment($paidNow, $data['order_date'], 'Paid at the time of order');
+                        $order->recordPayment($paidNow, $data['order_date'], [
+                        'note' => 'Paid at the time of order',
+                        'method' => $data['paid_method'] ?? 'cash',
+                        'reference' => $data['paid_reference'] ?? null,
+                    ]);
                     }
                 }
 
@@ -237,11 +243,16 @@ class OrderController extends Controller
             'payment_amount' => ['required', 'numeric', 'min:1', 'max:'.$due],
             'payment_date' => ['required', 'date'],
             'payment_note' => ['nullable', 'string', 'max:255'],
+            ...Transaction::paymentMethodRules(),
         ], [
             'payment_amount.max' => $due > 0 ? 'Amount cannot be more than the Rs. '.number_format($due).' due.' : 'Nothing is due on this order.',
         ]);
 
-        $order->recordPayment((float) $data['payment_amount'], $data['payment_date'], $data['payment_note'] ?? null);
+        $order->recordPayment((float) $data['payment_amount'], $data['payment_date'], [
+            'note' => $data['payment_note'] ?? null,
+            'method' => $data['payment_method'],
+            'reference' => $data['payment_reference'] ?? null,
+        ]);
 
         return redirect()->route('orders.show', $order)->with('status', 'Payment of Rs. '.number_format($data['payment_amount']).' recorded.');
     }

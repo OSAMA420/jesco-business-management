@@ -57,14 +57,19 @@ trait TracksPayments
         //
     }
 
-    protected function newPayment(float $amount, string $date, ?string $note, string $partyColumn, int $partyId): Transaction
+    /**
+     * @param  array{note?: ?string, method?: ?string, reference?: ?string}  $details
+     */
+    protected function newPayment(float $amount, string $date, array $details, string $partyColumn, int $partyId): Transaction
     {
         return Transaction::create([
             'type' => static::PAYMENT_TYPE,
             'reference_type' => static::class,
             'reference_id' => $this->id,
             $partyColumn => $partyId,
-            'description' => $note,
+            'description' => $details['note'] ?? null,
+            'payment_method' => $details['method'] ?? null,
+            'reference_no' => ($details['reference'] ?? null) ?: null,
             'amount' => static::PAYMENT_TYPE === 'payment_out' ? -$amount : $amount,
             'status' => 'paid',
             'transaction_date' => $date,

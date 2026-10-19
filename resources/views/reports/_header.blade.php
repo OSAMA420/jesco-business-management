@@ -1,6 +1,8 @@
 @php
     /** @var bool $datedReport  false for reports that are always "as of today" */
     $datedReport ??= true;
+    // Extra query values a report needs to keep when the date filter or CSV link is used (e.g. the chosen customer).
+    $keep = request()->only('customer', 'supplier');
     $periodLabel = $datedReport ? (\App\Support\DateFilter::PERIODS[request('period')] ?? 'All time') : 'As of today';
     if (request('period') === 'custom') {
         $periodLabel = trim((request('from') ?: 'Start').' to '.(request('to') ?: 'today'));
@@ -9,7 +11,7 @@
 
 <!-- Shown only on paper / PDF -->
 <div class="hidden print:block mb-4">
-    <p class="text-2xl text-jesco-600" style="font-family: 'Dancing Script', cursive;">Jesco</p>
+    <x-jesco-logo class="h-10 mb-1" />
     <h1 class="text-lg font-semibold text-gray-900">{{ $meta['title'] }}</h1>
     <p class="text-sm text-gray-600">{{ $periodLabel }} &middot; Printed {{ now()->format('d M Y, h:i A') }}</p>
 </div>
@@ -23,11 +25,14 @@
     <div class="flex flex-wrap items-center gap-2">
         @if($datedReport)
             <form method="GET" action="{{ route('reports.show', $report) }}" class="flex flex-wrap items-center gap-2">
+                @foreach($keep as $name => $value)
+                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                @endforeach
                 <x-date-filter />
                 <x-btn type="submit" variant="secondary">Apply</x-btn>
             </form>
         @endif
-        <a href="{{ route('reports.csv', ['report' => $report] + request()->only('period', 'from', 'to')) }}">
+        <a href="{{ route('reports.csv', ['report' => $report] + request()->only('period', 'from', 'to') + $keep) }}">
             <x-btn type="button" variant="secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                 Download CSV

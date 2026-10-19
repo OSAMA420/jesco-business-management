@@ -26,6 +26,11 @@ class PasswordResetLinkController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Without a real mail server the "link sent" message would be untrue.
+        if (! self::canSendEmail()) {
+            return back();
+        }
+
         $request->validate([
             'email' => ['required', 'email'],
         ]);
@@ -41,5 +46,14 @@ class PasswordResetLinkController extends Controller
                     ? back()->with('status', __($status))
                     : back()->withInput($request->only('email'))
                         ->withErrors(['email' => __($status)]);
+    }
+
+    /**
+     * Reset links only go out once a real mailer is configured (final hosting);
+     * until then the "log" mailer just writes them to storage/logs.
+     */
+    public static function canSendEmail(): bool
+    {
+        return ! in_array(config('mail.default'), ['log', 'array'], true);
     }
 }

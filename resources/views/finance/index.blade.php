@@ -26,11 +26,12 @@
                 this.expenseOpen = true;
             },
             openEdit(expense) { this.editing = expense.id; this.form = { ...expense }; this.expenseOpen = true; },
+            openingOpen: {{ $errors->has('opening_date') || $errors->has('opening.*') ? 'true' : 'false' }},
          }">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h2 class="text-xl font-semibold text-gray-800">Finance &amp; Accounts</h2>
-                <p class="text-sm text-gray-500">Money in and out, expenses, and who owes what.</p>
+                <p class="text-sm text-gray-500">Where your money is, what came in and went out, profit, and who owes what.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 @if($tab === 'overview')
@@ -53,39 +54,18 @@
 
         <!-- Tabs -->
         <div class="border-b border-gray-200 flex gap-6 text-sm font-medium">
-            @foreach(['overview' => 'Overview', 'transactions' => 'Transactions', 'expenses' => 'Expenses'] as $key => $label)
+            @foreach(['overview' => 'Overview', 'cashbook' => 'Cash Book', 'transactions' => 'Transactions', 'expenses' => 'Expenses'] as $key => $label)
                 <a href="{{ $tabUrl($key) }}"
                    class="-mb-px pb-3 border-b-2 transition-colors {{ $tab === $key ? 'border-jesco-600 text-jesco-600' : 'border-transparent text-gray-500 hover:text-gray-800' }}">{{ $label }}</a>
             @endforeach
         </div>
 
         @if($tab === 'overview')
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <x-stat-card label="Cash In" :counter="$summary['cash_in']" prefix="Rs. " :change="$periodLabel.' · payments received'" color="emerald">
-                    <x-slot name="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" /></svg>
-                    </x-slot>
-                </x-stat-card>
-                <x-stat-card label="Cash Out" :counter="$summary['cash_out']" prefix="Rs. " :change="$periodLabel.' · supplier payments and expenses'" :positive="false" color="amber">
-                    <x-slot name="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" /></svg>
-                    </x-slot>
-                </x-stat-card>
-                <x-stat-card label="Net Cash Flow" :counter="$summary['net']" prefix="Rs. " :change="$summary['net'] >= 0 ? 'More came in than went out' : 'More went out than came in'" :positive="$summary['net'] >= 0" color="jesco">
-                    <x-slot name="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
-                    </x-slot>
-                </x-stat-card>
-                <x-stat-card label="Expenses" :counter="$summary['expenses']" prefix="Rs. " :change="$periodLabel" :positive="false" color="rose">
-                    <x-slot name="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
-                    </x-slot>
-                </x-stat-card>
-            </div>
+            @include('finance._overview-money')
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <x-card class="p-5 lg:col-span-2">
-                    <h3 class="font-semibold text-gray-800">Cash In vs Cash Out</h3>
+                    <h3 class="font-semibold text-gray-800">Money In vs Money Out</h3>
                     <p class="text-xs text-gray-500 mb-4">Last 6 months</p>
                     <x-cash-flow-chart :months="$monthly" />
                 </x-card>
@@ -141,6 +121,10 @@
                     </x-card>
                 @endforeach
             </div>
+        @endif
+
+        @if($tab === 'cashbook')
+            @include('finance._cashbook')
         @endif
 
         @if($tab === 'transactions')
@@ -203,7 +187,12 @@
                                             —
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3 text-gray-500">{{ $t->description }}</td>
+                                    <td class="px-5 py-3 text-gray-500">
+                                        {{ $t->description }}
+                                        @if($t->methodLabel())
+                                            <p class="text-xs text-gray-400">{{ $t->methodLabel() }}{{ $t->reference_no ? ' · Ref: '.$t->reference_no : '' }}</p>
+                                        @endif
+                                    </td>
                                     <td class="px-5 py-3 text-right whitespace-nowrap">
                                         @if($isBill)
                                             <span class="text-gray-700">Rs. {{ number_format(abs($t->amount)) }}</span>
@@ -345,6 +334,48 @@
                 </div>
             </div>
         </div>
+
+        @if($tab === 'overview')
+            <!-- Opening balances popup -->
+            <div x-show="openingOpen" x-cloak class="fixed inset-0 z-50" @keydown.escape.window="openingOpen = false">
+                <div x-show="openingOpen" x-transition.opacity @click="openingOpen = false" class="fixed inset-0 bg-gray-900/50"></div>
+                <div class="fixed inset-0 flex items-center justify-center p-4">
+                    <div x-show="openingOpen" x-transition class="relative w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+                        <h3 class="text-base font-semibold text-gray-900">Opening Balances</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            How much was in each account on the day you started using this software.
+                            Count the cash in the till and check the bank and wallet apps. You can change these later.
+                        </p>
+                        <form method="POST" action="{{ route('finance.opening.store') }}" class="mt-5 space-y-4">
+                            @csrf
+                            @if($errors->has('opening_date') || $errors->has('opening.*'))
+                                <div class="rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm px-3 py-2">
+                                    @foreach(array_unique(array_merge($errors->get('opening_date'), collect($errors->get('opening.*'))->flatten()->all())) as $message)
+                                        <p>{{ $message }}</p>
+                                    @endforeach
+                                </div>
+                            @endif
+                            <div>
+                                <label for="opening_date" class="block text-sm font-medium text-gray-700 mb-1.5">As of date</label>
+                                <input type="date" id="opening_date" name="opening_date" value="{{ old('opening_date', ($accounts['openingDate'] ?? now()->startOfMonth())->format('Y-m-d')) }}" max="{{ now()->format('Y-m-d') }}" required
+                                       class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+                            </div>
+                            @foreach($accounts['list'] as $key => $account)
+                                <div>
+                                    <label for="opening_{{ $key }}" class="block text-sm font-medium text-gray-700 mb-1.5">{{ $account['label'] }} (Rs.)</label>
+                                    <input type="number" id="opening_{{ $key }}" name="opening[{{ $key }}]" min="0" step="0.01" value="{{ old('opening.'.$key, $account['opening'] ?: '') }}" placeholder="0"
+                                           class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+                                </div>
+                            @endforeach
+                            <div class="pt-2 flex justify-end gap-2">
+                                <x-btn type="button" variant="secondary" @click="openingOpen = false">Cancel</x-btn>
+                                <x-btn type="submit">Save Opening Balances</x-btn>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <x-confirm-delete-modal title="Delete this expense?" />
     </div>

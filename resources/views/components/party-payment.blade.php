@@ -6,7 +6,7 @@
 ])
 
 @php
-    $reopen = $errors->has('payment_amount') || $errors->has('payment_date') || $errors->has('apply_to');
+    $reopen = $errors->hasAny(['payment_amount', 'payment_date', 'apply_to', 'payment_method', 'payment_reference']);
 @endphp
 
 <div x-data="{
@@ -65,9 +65,10 @@
                         </div>
                     </div>
 
+                    <x-payment-method-fields id-prefix="party_payment" />
                     <div>
                         <label for="party_payment_note" class="block text-sm font-medium text-gray-700 mb-1.5">Note (optional)</label>
-                        <input type="text" id="party_payment_note" name="payment_note" value="{{ old('payment_note') }}" placeholder="e.g. Cash, or cheque no. 004512"
+                        <input type="text" id="party_payment_note" name="payment_note" value="{{ old('payment_note') }}" placeholder="e.g. Paid by his son at the shop"
                                class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
                     </div>
 

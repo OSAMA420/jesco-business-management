@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
+use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Support\DateFilter;
 use Illuminate\Http\Request;
@@ -23,6 +25,8 @@ class ReportController extends Controller
         'stock' => ['title' => 'Stock Report', 'description' => 'Stock value, low and out-of-stock items, and what is selling.', 'icon' => 'inventory'],
         'purchases' => ['title' => 'Purchase Report', 'description' => 'What was bought, from which supplier, and what is still owed.', 'icon' => 'purchase'],
         'dues' => ['title' => 'Dues (Aging)', 'description' => 'Who owes money and for how long, customers and suppliers.', 'icon' => 'ledger'],
+        'customer-statement' => ['title' => 'Customer Statement', 'description' => "One customer's orders and payments with a running balance, ready to send them.", 'icon' => 'customer'],
+        'supplier-statement' => ['title' => 'Supplier Statement', 'description' => "One supplier's purchases and the payments made to them, with a running balance.", 'icon' => 'supplier'],
     ];
 
     public function index(): View
@@ -45,6 +49,9 @@ class ReportController extends Controller
 
         return response()->streamDownload(function () use ($tables) {
             $out = fopen('php://output', 'w');
+            if (empty($tables)) {
+                fputcsv($out, ['Nothing to export. Choose a customer or supplier first.']);
+            }
             foreach ($tables as $title => $table) {
                 fputcsv($out, [$title]);
                 fputcsv($out, $table['columns']);
@@ -272,6 +279,144 @@ class ReportController extends Controller
                 'Suppliers (payable)' => [
                     'columns' => $columns('Supplier'),
                     'rows' => $this->aging($purchases, 'purchase_date', fn (Purchase $p) => $p->supplier?->name ?? 'Deleted supplier'),
+                ],
+            ],
+        ];
+    }
+
+    private function customerStatementData(Request $request): array
+    {
+        return $this->statement($request, [
+            'kind' => 'customer',
+            'model' => Customer::class,
+            'bill_type' => 'sale',
+            'payment_type' => 'payment_in',
+            'bill_class' => Order::class,
+            'number' => 'order_number',
+            'date' => 'order_date',
+            'bills' => 'orders',
+            'billed_text' => 'Order %s billed',
+            'paid_text' => 'Payment received',
+            'paid_column' => 'Paid',
+            'bills_title' => 'Orders',
+            'bill_column' => 'Order',
+        ]);
+    }
+
+    private function supplierStatementData(Request $request): array
+    {
+        return $this->statement($request, [
+            'kind' => 'supplier',
+            'model' => Supplier::class,
+            'bill_type' => 'purchase',
+            'payment_type' => 'payment_out',
+            'bill_class' => Purchase::class,
+            'number' => 'purchase_number',
+            'date' => 'purchase_date',
+            'bills' => 'purchases',
+            'billed_text' => 'Purchase %s received',
+            'paid_text' => 'Payment made',
+            'paid_column' => 'Paid',
+            'bills_title' => 'Purchases',
+            'bill_column' => 'Purchase',
+        ]);
+    }
+
+    /**
+     * One customer's or supplier's bills and payments for the period, like a
+     * bank statement: opening balance, every entry with a running balance,
+     * closing balance, plus the bills dated in the period.
+     */
+    private function statement(Request $request, array $cfg): array
+    {
+        $parties = $cfg['model']::orderBy('name')->get();
+        $party = $request->filled($cfg['kind']) ? $cfg['model']::find($request->integer($cfg['kind'])) : null;
+
+        if (! $party) {
+            return ['cfg' => $cfg, 'parties' => $parties, 'party' => null, 'tables' => []];
+        }
+
+        [$from, $to] = DateFilter::range($request) ?? [null, null];
+        $entries = $party->transactions()
+            ->with('reference')
+            ->whereIn('type', [$cfg['bill_type'], $cfg['payment_type']])
+            ->orderBy('transaction_date')->orderBy('id')
+            ->get();
+
+        $before = $from ? $entries->filter(fn (Transaction $t) => $t->transaction_date->lt($from->copy()->startOfDay())) : collect();
+        $inPeriod = $entries->diff($before)
+            ->when($to, fn ($c) => $c->filter(fn (Transaction $t) => $t->transaction_date->lte($to->copy()->endOfDay())))
+            ->values();
+
+        // Bills raise the balance and payments lower it; stored signs differ by side, so work in absolute amounts.
+        $effect = fn (Transaction $t) => abs((float) $t->amount) * ($t->type === $cfg['bill_type'] ? 1 : -1);
+        $opening = (float) $before->sum($effect);
+        $balance = $opening;
+
+        $lines = $inPeriod->map(function (Transaction $t) use (&$balance, $cfg) {
+            $isBill = $t->type === $cfg['bill_type'];
+            $bill = $t->reference instanceof $cfg['bill_class'] ? $t->reference : null;
+            $number = $bill?->{$cfg['number']};
+            $amount = abs((float) $t->amount);
+            $balance += $isBill ? $amount : -$amount;
+
+            return (object) [
+                'date' => $t->transaction_date,
+                'details' => $isBill ? sprintf($cfg['billed_text'], $number ?? '') : $cfg['paid_text'].($number ? ' for '.$number : ''),
+                // Skip notes that only repeat the heading, and the data migration's internal note.
+                'note' => $isBill || $t->description === $cfg['paid_text'] || Str::startsWith((string) $t->description, 'Paid in full (recorded before')
+                    ? null : $t->description,
+                'method' => $t->methodLabel(),
+                'reference' => $t->reference_no,
+                'billed' => $isBill ? $amount : 0.0,
+                'paid' => $isBill ? 0.0 : $amount,
+                'balance' => $balance,
+                'bill' => $bill,
+                'number' => $number,
+            ];
+        });
+
+        $bills = $party->{$cfg['bills']}()
+            ->with(['items.product', 'transactions'])
+            ->tap(fn ($q) => DateFilter::apply($q, $request, $cfg['date']))
+            ->orderBy($cfg['date'])->orderBy('id')
+            ->get();
+
+        $summary = [
+            'opening' => $opening,
+            'billed' => (float) $lines->sum('billed'),
+            'paid' => (float) $lines->sum('paid'),
+            'closing' => $balance,
+        ];
+
+        return [
+            'cfg' => $cfg,
+            'parties' => $parties,
+            'party' => $party,
+            'summary' => $summary,
+            'lines' => $lines,
+            'bills' => $bills,
+            'tables' => [
+                'Statement for '.$party->name => [
+                    'columns' => ['Date', 'Details', 'Paid Via', 'Reference', 'Billed (Rs.)', 'Paid (Rs.)', 'Balance (Rs.)'],
+                    'rows' => array_merge(
+                        [['', 'Opening balance', '', '', '', '', $opening]],
+                        $lines->map(fn ($l) => [$l->date->format('Y-m-d'), trim($l->details.($l->note ? ' ('.$l->note.')' : '')), $l->method ?? '', $l->reference ?? '', $l->billed ?: '', $l->paid ?: '', $l->balance])->all(),
+                        [['', 'Closing balance', '', '', $summary['billed'], $summary['paid'], $balance]],
+                    ),
+                    'csvOnly' => true,
+                ],
+                $cfg['bills_title'] => [
+                    'columns' => [$cfg['bill_column'], 'Date', 'Items', 'Status', 'Total (Rs.)', 'Paid (Rs.)', 'Due (Rs.)'],
+                    'rows' => $bills->map(fn ($b) => [
+                        $b->{$cfg['number']},
+                        $b->{$cfg['date']}->format('Y-m-d'),
+                        $b->items->map(fn ($i) => ($i->product?->name ?? 'Deleted product').' x '.$i->quantity)->implode(', '),
+                        ucfirst($b->status),
+                        $b->status === 'cancelled' ? 0 : $b->total(),
+                        $b->amountPaid(),
+                        $b->balanceDue(),
+                    ])->all(),
                 ],
             ],
         ];

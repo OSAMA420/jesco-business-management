@@ -17,7 +17,7 @@
         $paid > 0 => ['Partial', 'yellow'],
         default => ['Unpaid', 'red'],
     };
-    $reopen = $errors->has('payment_amount') || $errors->has('payment_date');
+    $reopen = $errors->hasAny(['payment_amount', 'payment_date', 'payment_method', 'payment_reference']);
 @endphp
 
 <x-card x-data="{ recording: {{ $reopen ? 'true' : 'false' }}, amount: {{ old('payment_amount', $due) ?: 0 }} }">
@@ -68,6 +68,7 @@
                     <tr class="text-left text-xs text-gray-500 uppercase tracking-wide bg-gray-50">
                         <th class="px-5 py-3 font-medium">Date</th>
                         <th class="px-5 py-3 font-medium">Amount</th>
+                        <th class="px-5 py-3 font-medium">Paid Via</th>
                         <th class="px-5 py-3 font-medium">Note</th>
                         @if($removeUrl)
                             <th class="px-5 py-3 font-medium"></th>
@@ -79,6 +80,14 @@
                     <tr>
                         <td class="px-5 py-3 text-gray-500 whitespace-nowrap">{{ $payment->transaction_date->format('Y-m-d') }}</td>
                         <td class="px-5 py-3 font-medium text-emerald-600 whitespace-nowrap">Rs. {{ number_format(abs($payment->amount)) }}</td>
+                        <td class="px-5 py-3 whitespace-nowrap">
+                            @if($payment->methodLabel())
+                                <p class="text-gray-800">{{ $payment->methodLabel() }}</p>
+                                @if($payment->reference_no)<p class="text-xs text-gray-500">Ref: {{ $payment->reference_no }}</p>@endif
+                            @else
+                                <span class="text-xs text-gray-400">Not recorded</span>
+                            @endif
+                        </td>
                         <td class="px-5 py-3 text-gray-600">{{ $payment->description }}</td>
                         @if($removeUrl)
                             <td class="px-5 py-3 text-right">
@@ -93,7 +102,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ $removeUrl ? 4 : 3 }}" class="px-5 py-6 text-center text-gray-500">No payments recorded yet.</td>
+                        <td colspan="{{ $removeUrl ? 5 : 4 }}" class="px-5 py-6 text-center text-gray-500">No payments recorded yet.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -133,9 +142,10 @@
                         <span class="font-medium" :class="amount >= {{ $due }} ? 'text-emerald-600' : 'text-amber-600'"
                               x-text="amount >= {{ $due }} ? 'Fully paid' : 'Rs. ' + Math.max(0, {{ $due }} - (Number(amount) || 0)).toLocaleString('en-US') + ' still due'"></span>
                     </p>
+                    <x-payment-method-fields id-prefix="payment" />
                     <div>
                         <label for="payment_note" class="block text-sm font-medium text-gray-700 mb-1.5">Note (optional)</label>
-                        <input type="text" id="payment_note" name="payment_note" value="{{ old('payment_note') }}" placeholder="e.g. Cash, or cheque no. 004512"
+                        <input type="text" id="payment_note" name="payment_note" value="{{ old('payment_note') }}" placeholder="e.g. Paid by his son at the shop"
                                class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
                     </div>
                     <div class="pt-2 flex justify-end gap-2">

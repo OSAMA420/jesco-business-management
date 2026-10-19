@@ -93,13 +93,13 @@ class PaymentFlowTest extends TestCase
         $order = Order::sole();
         $this->assertSame('unpaid', $this->saleStatus($order));
 
-        $this->post(route('orders.payments.store', $order), ['payment_amount' => 12000, 'payment_date' => '2026-09-22'])
+        $this->post(route('orders.payments.store', $order), ['payment_method' => 'cash', 'payment_amount' => 12000, 'payment_date' => '2026-09-22'])
             ->assertSessionHasErrors('payment_amount');
 
-        $this->post(route('orders.payments.store', $order), ['payment_amount' => 3000, 'payment_date' => '2026-09-22', 'payment_note' => 'Cash']);
+        $this->post(route('orders.payments.store', $order), ['payment_method' => 'cash', 'payment_amount' => 3000, 'payment_date' => '2026-09-22', 'payment_note' => 'Cash']);
         $this->assertSame('partial', $this->saleStatus($order));
 
-        $this->post(route('orders.payments.store', $order), ['payment_amount' => 7000, 'payment_date' => '2026-09-25']);
+        $this->post(route('orders.payments.store', $order), ['payment_method' => 'cash', 'payment_amount' => 7000, 'payment_date' => '2026-09-25']);
         $this->assertSame('paid', $this->saleStatus($order));
         $this->assertEquals(0, $this->customer->balance());
 
@@ -132,10 +132,10 @@ class PaymentFlowTest extends TestCase
         $this->createOrder(0, '2026-09-10');
         [$older, $newer] = [Order::whereDate('order_date', '2026-09-10')->sole(), Order::whereDate('order_date', '2026-09-18')->sole()];
 
-        $this->post(route('customers.payments.store', $this->customer), ['apply_to' => 'auto', 'payment_amount' => 25000, 'payment_date' => '2026-09-26'])
+        $this->post(route('customers.payments.store', $this->customer), ['payment_method' => 'cash', 'apply_to' => 'auto', 'payment_amount' => 25000, 'payment_date' => '2026-09-26'])
             ->assertSessionHasErrors('payment_amount');
 
-        $this->post(route('customers.payments.store', $this->customer), ['apply_to' => 'auto', 'payment_amount' => 13000, 'payment_date' => '2026-09-26'])
+        $this->post(route('customers.payments.store', $this->customer), ['payment_method' => 'cash', 'apply_to' => 'auto', 'payment_amount' => 13000, 'payment_date' => '2026-09-26'])
             ->assertRedirect(route('customers.show', $this->customer));
 
         $this->assertSame('paid', $this->saleStatus($older));
@@ -143,9 +143,9 @@ class PaymentFlowTest extends TestCase
         $this->assertEquals(7000, $this->customer->balance());
 
         // A specific bill, capped at that bill's own balance.
-        $this->post(route('customers.payments.store', $this->customer), ['apply_to' => (string) $newer->id, 'payment_amount' => 8000, 'payment_date' => '2026-09-26'])
+        $this->post(route('customers.payments.store', $this->customer), ['payment_method' => 'cash', 'apply_to' => (string) $newer->id, 'payment_amount' => 8000, 'payment_date' => '2026-09-26'])
             ->assertSessionHasErrors('payment_amount');
-        $this->post(route('customers.payments.store', $this->customer), ['apply_to' => (string) $older->id, 'payment_amount' => 100, 'payment_date' => '2026-09-26'])
+        $this->post(route('customers.payments.store', $this->customer), ['payment_method' => 'cash', 'apply_to' => (string) $older->id, 'payment_amount' => 100, 'payment_date' => '2026-09-26'])
             ->assertSessionHasErrors('apply_to');
     }
 
@@ -156,7 +156,7 @@ class PaymentFlowTest extends TestCase
         $this->assertSame('partial', $purchase->fresh()->payment_status);
         $this->assertEquals(50000, $this->supplier->balance());
 
-        $this->post(route('purchases.payments.store', $purchase), ['payment_amount' => 50000, 'payment_date' => '2026-09-26']);
+        $this->post(route('purchases.payments.store', $purchase), ['payment_method' => 'cash', 'payment_amount' => 50000, 'payment_date' => '2026-09-26']);
         $this->assertSame('paid', $purchase->fresh()->payment_status);
         $this->assertEquals(0, $this->supplier->balance());
 
@@ -172,7 +172,7 @@ class PaymentFlowTest extends TestCase
         $purchase = Purchase::sole();
 
         $this->assertSame(0, Transaction::count());
-        $this->post(route('purchases.payments.store', $purchase), ['payment_amount' => 1000, 'payment_date' => '2026-09-26'])
+        $this->post(route('purchases.payments.store', $purchase), ['payment_method' => 'cash', 'payment_amount' => 1000, 'payment_date' => '2026-09-26'])
             ->assertSessionHasErrors('payment_amount');
     }
 
@@ -181,7 +181,7 @@ class PaymentFlowTest extends TestCase
         $this->createPurchase('received');
         $this->createPurchase('received');
 
-        $this->post(route('suppliers.payments.store', $this->supplier), ['apply_to' => 'auto', 'payment_amount' => 100000, 'payment_date' => '2026-09-26'])
+        $this->post(route('suppliers.payments.store', $this->supplier), ['payment_method' => 'cash', 'apply_to' => 'auto', 'payment_amount' => 100000, 'payment_date' => '2026-09-26'])
             ->assertRedirect(route('suppliers.show', $this->supplier));
 
         $this->assertSame(['paid', 'partial'], Purchase::orderBy('id')->pluck('payment_status')->all());
