@@ -28,4 +28,21 @@ class OrderItem extends Model
     {
         return (float) ($this->quantity * $this->unit_price);
     }
+
+    /**
+     * Sold lines whose product had no cost price at the time of sale. Their cost counts as zero in
+     * profit, so pages show this to say the profit is higher than the real figure.
+     *
+     * @param  iterable<OrderItem>  $items
+     * @return array{products: int, sales: float}
+     */
+    public static function missingCost(iterable $items): array
+    {
+        $missing = collect($items)->filter(fn (OrderItem $i) => $i->unit_cost === null);
+
+        return [
+            'products' => $missing->pluck('product_id')->unique()->count(),
+            'sales' => (float) $missing->sum(fn (OrderItem $i) => $i->subtotal()),
+        ];
+    }
 }

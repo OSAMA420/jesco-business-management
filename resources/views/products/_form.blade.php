@@ -12,8 +12,8 @@
     </div>
 
     <div>
-        <label for="sku" class="block text-sm font-medium text-gray-700 mb-1.5">SKU</label>
-        <input type="text" id="sku" name="sku" value="{{ old('sku', $product?->sku) }}" required
+        <label for="sku" class="block text-sm font-medium text-gray-700 mb-1.5">SKU (optional)</label>
+        <input type="text" id="sku" name="sku" value="{{ old('sku', $product?->sku) }}"
                class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
         @error('sku') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
     </div>
@@ -30,16 +30,18 @@
     </div>
 
     <div>
-        <label for="cost_price" class="block text-sm font-medium text-gray-700 mb-1.5">Cost Price (Rs.)</label>
-        <input type="number" step="0.01" min="0" id="cost_price" name="cost_price" value="{{ old('cost_price', $product?->cost_price) }}" required
+        <label for="cost_price" class="block text-sm font-medium text-gray-700 mb-1.5">Cost Price (Rs.) (optional)</label>
+        <input type="number" step="0.01" min="0" id="cost_price" name="cost_price" value="{{ old('cost_price', $product?->cost_price) }}"
                class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+        <p class="mt-1.5 text-xs text-gray-500">Can be left blank. It fills in when a purchase of this product is received.</p>
         @error('cost_price') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
     </div>
 
     <div>
-        <label for="selling_price" class="block text-sm font-medium text-gray-700 mb-1.5">Selling Price (Rs.)</label>
-        <input type="number" step="0.01" min="0" id="selling_price" name="selling_price" value="{{ old('selling_price', $product?->selling_price) }}" required
+        <label for="selling_price" class="block text-sm font-medium text-gray-700 mb-1.5">Selling Price (Rs.) (optional)</label>
+        <input type="number" step="0.01" min="0" id="selling_price" name="selling_price" value="{{ old('selling_price', $product?->selling_price) }}"
                class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+        <p class="mt-1.5 text-xs text-gray-500">Can be left blank. The rate is then typed in on each order.</p>
         @error('selling_price') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
     </div>
 

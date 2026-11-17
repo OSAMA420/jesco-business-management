@@ -10,6 +10,8 @@
     <div class="space-y-6">
         @include('reports._header')
 
+        <x-missing-cost-note :missing="$s['missingCost']" />
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <x-card class="lg:col-span-2 break-inside-avoid">
                 <div class="px-5 py-4 border-b border-gray-100">

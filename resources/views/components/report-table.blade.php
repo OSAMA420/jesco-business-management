@@ -2,8 +2,9 @@
 
 @php
     // Columns labelled "(Rs.)" are money: formatted, right-aligned and totalled (averages aren't summed).
+    // A null cell means the value isn't known (e.g. a product with no cost price) and shows "Not set".
     $isMoney = fn ($i) => str_contains($columns[$i], '(Rs.)');
-    $isNumeric = fn ($i) => collect($rows)->every(fn ($r) => is_numeric($r[$i] ?? null) || str_ends_with((string) ($r[$i] ?? ''), '%'));
+    $isNumeric = fn ($i) => collect($rows)->every(fn ($r) => ($r[$i] ?? null) === null || is_numeric($r[$i]) || str_ends_with((string) $r[$i], '%'));
     $summable = fn ($i) => $isMoney($i) && ! str_starts_with($columns[$i], 'Avg');
     $badges = ['In Stock' => 'green', 'Low Stock' => 'yellow', 'Out of Stock' => 'red'];
 @endphp
@@ -27,7 +28,9 @@
                     <tr class="hover:bg-gray-50">
                         @foreach($row as $i => $cell)
                             <td class="px-5 py-3 {{ $i === 0 ? 'font-medium text-gray-800' : 'text-gray-600 whitespace-nowrap' }} {{ $i > 0 && $isNumeric($i) ? 'text-right' : '' }}">
-                                @if(isset($badges[$cell]))
+                                @if($cell === null)
+                                    <span class="text-gray-400">Not set</span>
+                                @elseif(isset($badges[$cell]))
                                     <x-badge :color="$badges[$cell]">{{ $cell }}</x-badge>
                                 @elseif($isMoney($i) && is_numeric($cell))
                                     {{ $cell == 0 ? '—' : 'Rs. '.number_format($cell) }}

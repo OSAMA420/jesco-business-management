@@ -6,13 +6,13 @@
             status: @js(old('status', 'received')),
             items: [{ product_id: '', quantity: 1, unit_cost: 0 }],
             amountPaid: {{ (float) old('amount_paid', 0) }},
-            products: @js($products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'sku' => $p->sku, 'cost' => (float) $p->cost_price, 'stock' => $p->stock_quantity])),
+            products: @js($products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'sku' => $p->sku, 'cost' => $p->cost_price === null ? null : (float) $p->cost_price, 'stock' => $p->stock_quantity])),
             addItem() { this.items.push({ product_id: '', quantity: 1, unit_cost: 0 }); },
             removeItem(i) { if (this.items.length > 1) this.items.splice(i, 1); },
             productInfo(id) { return this.products.find(p => p.id == id); },
             onProductChange(item) {
                 const p = this.productInfo(item.product_id);
-                item.unit_cost = p ? p.cost : 0;
+                item.unit_cost = p ? (p.cost ?? '') : 0;
             },
             subtotal(item) { return (Number(item.quantity) || 0) * (Number(item.unit_cost) || 0); },
             total() { return this.items.reduce((sum, item) => sum + this.subtotal(item), 0); },
@@ -135,7 +135,7 @@
                                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
                                             <option value="">Select a product</option>
                                             <template x-for="p in products" :key="p.id">
-                                                <option :value="p.id" x-text="p.name + ' (' + p.sku + '), ' + p.stock + ' in stock'"></option>
+                                                <option :value="p.id" x-text="p.name + (p.sku ? ' (' + p.sku + ')' : '') + ', ' + p.stock + ' in stock'"></option>
                                             </template>
                                         </select>
                                     </td>
@@ -146,6 +146,7 @@
                                     <td class="px-5 py-3">
                                         <input type="number" step="0.01" :name="'items[' + index + '][unit_cost]'" x-model.number="item.unit_cost" min="0" required
                                                class="w-28 rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
+                                        <p x-show="productInfo(item.product_id) && productInfo(item.product_id).cost === null && item.unit_cost === ''" x-cloak class="mt-1 text-xs text-amber-600">No cost set yet, type the cost</p>
                                     </td>
                                     <td class="px-5 py-3 font-medium text-gray-800 whitespace-nowrap" x-text="'Rs. ' + subtotal(item).toLocaleString('en-US')"></td>
                                     <td class="px-5 py-3">

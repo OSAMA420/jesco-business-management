@@ -5,8 +5,8 @@
         @include('reports._header')
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <x-stat-card label="Stock Value (at cost)" :value="'Rs. '.number_format($kpis['cost_value'])" />
-            <x-stat-card label="Stock Value (at selling price)" :value="'Rs. '.number_format($kpis['sale_value'])" />
+            <x-stat-card label="Stock Value (at cost)" :value="'Rs. '.number_format($kpis['cost_value'])" :change="$kpis['no_cost'] ? $kpis['no_cost'].' in-stock '.Str::plural('product', $kpis['no_cost']).' without a cost left out' : null" :positive="false" />
+            <x-stat-card label="Stock Value (at selling price)" :value="'Rs. '.number_format($kpis['sale_value'])" :change="$kpis['no_price'] ? $kpis['no_price'].' in-stock '.Str::plural('product', $kpis['no_price']).' without a price left out' : null" :positive="false" />
             <x-stat-card label="Low Stock Items" :value="number_format($kpis['low'])" :change="$kpis['low'] ? 'Reorder soon' : null" :positive="false" />
             <x-stat-card label="Out of Stock" :value="number_format($kpis['out'])" :change="$kpis['out'] ? 'Cannot be sold right now' : null" :positive="false" />
         </div>

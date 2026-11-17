@@ -86,6 +86,7 @@ class ReportController extends Controller
             ->groupBy('product_id')
             ->map(fn (Collection $items) => [
                 'name' => $items->first()->product?->name ?? 'Deleted product',
+                'costMissing' => $items->contains(fn (OrderItem $i) => $i->unit_cost === null),
                 'qty' => (int) $items->sum('quantity'),
                 'revenue' => (float) $items->sum(fn (OrderItem $i) => $i->quantity * $i->unit_price),
                 'cost' => (float) $items->sum(fn (OrderItem $i) => $i->quantity * $i->unit_cost),
@@ -148,7 +149,8 @@ class ReportController extends Controller
 
     private function profitLossData(Request $request): array
     {
-        $products = $this->soldByProduct($this->salesOrders($request));
+        $orders = $this->salesOrders($request);
+        $products = $this->soldByProduct($orders);
         $revenue = (float) $products->sum('revenue');
         $cogs = (float) $products->sum('cost');
 
@@ -170,12 +172,13 @@ class ReportController extends Controller
                 'expenses' => $expenses,
                 'expenseTotal' => $expenseTotal,
                 'net' => $revenue - $cogs - $expenseTotal,
+                'missingCost' => OrderItem::missingCost($orders->flatMap->items),
             ],
             'tables' => [
                 'Profit by product' => [
                     'columns' => ['Product', 'Qty Sold', 'Revenue (Rs.)', 'Cost (Rs.)', 'Profit (Rs.)', 'Margin'],
                     'rows' => $products
-                        ->map(fn ($p) => [$p['name'], $p['qty'], $p['revenue'], $p['cost'], $p['revenue'] - $p['cost'], self::percent($p['revenue'] - $p['cost'], $p['revenue'])])
+                        ->map(fn ($p) => [$p['name'].($p['costMissing'] ? ' (cost not set)' : ''), $p['qty'], $p['revenue'], $p['cost'], $p['revenue'] - $p['cost'], self::percent($p['revenue'] - $p['cost'], $p['revenue'])])
                         ->sortByDesc(4)->values()->all(),
                 ],
                 'Profit & loss statement' => [
@@ -200,6 +203,8 @@ class ReportController extends Controller
             'kpis' => [
                 'cost_value' => (float) $products->sum(fn (Product $p) => max(0, $p->stock_quantity) * $p->cost_price),
                 'sale_value' => (float) $products->sum(fn (Product $p) => max(0, $p->stock_quantity) * $p->selling_price),
+                'no_cost' => $products->filter(fn (Product $p) => $p->stock_quantity > 0 && $p->cost_price === null)->count(),
+                'no_price' => $products->filter(fn (Product $p) => $p->stock_quantity > 0 && $p->selling_price === null)->count(),
                 'low' => $products->filter->isLowStock()->count(),
                 'out' => $products->filter->isOutOfStock()->count(),
             ],
@@ -212,7 +217,7 @@ class ReportController extends Controller
                         $p->stock_quantity,
                         $p->reorder_level,
                         (int) ($soldQty[$p->id] ?? 0),
-                        max(0, $p->stock_quantity) * (float) $p->cost_price,
+                        $p->cost_price === null ? null : max(0, $p->stock_quantity) * (float) $p->cost_price,
                         $p->isOutOfStock() ? 'Out of Stock' : ($p->isLowStock() ? 'Low Stock' : 'In Stock'),
                     ])->all(),
                 ],

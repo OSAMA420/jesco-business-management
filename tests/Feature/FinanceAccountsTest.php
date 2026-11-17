@@ -101,7 +101,7 @@ class FinanceAccountsTest extends TestCase
         $this->assertEquals(4000, $flows['in']['cash']);
         $this->assertEquals(3000, $flows['in']['bank']);
         $this->assertEquals(1500, $flows['expenses']['cash']);
-        $this->assertEquals(['revenue' => 10000, 'cogs' => 7000, 'gross' => 3000, 'expenses' => 1500, 'net' => 1500], $page->viewData('profit'));
+        $this->assertEquals(['revenue' => 10000, 'cogs' => 7000, 'gross' => 3000, 'expenses' => 1500, 'net' => 1500, 'missingCost' => ['products' => 0, 'sales' => 0]], $page->viewData('profit'));
         $page->assertSee('Money You Have Now')->assertSee('Net Cash Flow')->assertSee('Cash Book');
     }
 

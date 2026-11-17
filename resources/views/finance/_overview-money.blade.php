@@ -141,4 +141,5 @@
             </div>
         </dl>
     </x-card>
+    <x-missing-cost-note :missing="$profit['missingCost']" />
 </section>

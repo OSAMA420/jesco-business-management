@@ -51,9 +51,9 @@
                         @forelse($products as $product)
                         <tr class="hover:bg-gray-50">
                             <td class="px-5 py-3 font-medium text-gray-800">{{ $product->name }}</td>
-                            <td class="px-5 py-3 text-gray-500">{{ $product->sku }}</td>
+                            <td class="px-5 py-3 text-gray-500">{{ $product->sku ?? '—' }}</td>
                             <td class="px-5 py-3 text-gray-600">{{ $product->category?->name ?? '—' }}</td>
-                            <td class="px-5 py-3 text-gray-800">Rs. {{ number_format($product->selling_price) }}</td>
+                            <td class="px-5 py-3 text-gray-800">{{ $product->selling_price === null ? '—' : 'Rs. '.number_format($product->selling_price) }}</td>
                             <td class="px-5 py-3 text-gray-800">{{ $product->stock_quantity }}</td>
                             <td class="px-5 py-3">
                                 @if($product->is_active)

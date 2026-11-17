@@ -30,6 +30,19 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * Once a cost is known, give it to earlier sales that were made while the product had none,
+     * so profit for those sales stops being counted at zero cost.
+     */
+    public function fillMissingSaleCosts(): int
+    {
+        if ($this->cost_price === null) {
+            return 0;
+        }
+
+        return $this->orderItems()->whereNull('unit_cost')->update(['unit_cost' => $this->cost_price]);
+    }
+
     public function purchaseItems(): HasMany
     {
         return $this->hasMany(PurchaseItem::class);

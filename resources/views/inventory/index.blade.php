@@ -72,7 +72,7 @@
                         @forelse($stock as $product)
                         <tr class="hover:bg-gray-50">
                             <td class="px-5 py-3 font-medium text-gray-800">{{ $product->name }}</td>
-                            <td class="px-5 py-3 text-gray-500">{{ $product->sku }}</td>
+                            <td class="px-5 py-3 text-gray-500">{{ $product->sku ?? '—' }}</td>
                             <td class="px-5 py-3 text-emerald-600">+{{ $product->stock_in ?? 0 }}</td>
                             <td class="px-5 py-3 text-rose-600">-{{ $product->stock_out ?? 0 }}</td>
                             <td class="px-5 py-3 font-medium text-gray-800">{{ $product->stock_quantity }}</td>
@@ -175,7 +175,7 @@
                         <select id="product_id" name="product_id" required class="w-full rounded-lg border-gray-300 text-sm focus:border-jesco-500 focus:ring-jesco-500">
                             <option value="">Select a product</option>
                             @foreach($products as $product)
-                                <option value="{{ $product->id }}" @selected(old('product_id') == $product->id)>{{ $product->name }} ({{ $product->sku }}) &mdash; {{ $product->stock_quantity }} in stock</option>
+                                <option value="{{ $product->id }}" @selected(old('product_id') == $product->id)>{{ $product->name }}@if($product->sku) ({{ $product->sku }})@endif &mdash; {{ $product->stock_quantity }} in stock</option>
                             @endforeach
                         </select>
                         @error('product_id') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror

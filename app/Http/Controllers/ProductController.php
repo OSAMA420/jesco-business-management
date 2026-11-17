@@ -63,6 +63,7 @@ class ProductController extends Controller
         $data = $this->validateProduct($request, $product);
 
         $product->update($data);
+        $product->fillMissingSaleCosts();
 
         return redirect()->route('products.index')->with('status', 'Product updated successfully.');
     }
@@ -83,10 +84,10 @@ class ProductController extends Controller
         $data = $request->validate([
             'category_id' => ['nullable', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:100', 'unique:products,sku,'.($product?->id)],
+            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku,'.($product?->id)],
             'description' => ['nullable', 'string'],
-            'cost_price' => ['required', 'numeric', 'min:0'],
-            'selling_price' => ['required', 'numeric', 'min:0'],
+            'cost_price' => ['nullable', 'numeric', 'min:0'],
+            'selling_price' => ['nullable', 'numeric', 'min:0'],
             'stock_quantity' => ['required', 'integer', 'min:0'],
             'reorder_level' => ['required', 'integer', 'min:0'],
         ]);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\Transaction;
@@ -191,6 +192,7 @@ class FinanceController extends Controller
             'gross' => $revenue - $cogs,
             'expenses' => $expenses,
             'net' => $revenue - $cogs - $expenses,
+            'missingCost' => OrderItem::missingCost($items),
         ];
     }
 
