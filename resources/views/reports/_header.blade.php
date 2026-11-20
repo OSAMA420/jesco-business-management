@@ -11,6 +11,7 @@
 
 <!-- Shown only on paper / PDF -->
 <div class="hidden print:block mb-4">
+    <p class="mb-1 text-sm font-bold tracking-wide text-gray-900">{{ config('jesco.legal_name') }}</p>
     <x-jesco-logo class="h-10 mb-1" />
     <h1 class="text-lg font-semibold text-gray-900">{{ $meta['title'] }}</h1>
     <p class="text-sm text-gray-600">{{ $periodLabel }} &middot; Printed {{ now()->format('d M Y, h:i A') }}</p>

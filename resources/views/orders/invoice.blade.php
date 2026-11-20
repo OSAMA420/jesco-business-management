@@ -44,9 +44,9 @@
         <!-- Header -->
         <header class="flex items-start justify-between gap-6 pb-6 border-b-2 border-jesco-600">
             <div>
+                <p class="mb-2 text-base font-bold tracking-wide text-gray-900">{{ $company['legal_name'] }}</p>
                 <x-jesco-logo class="h-16" />
-                <p class="mt-2 text-sm font-semibold text-gray-900">{{ $company['legal_name'] }}</p>
-                <p class="text-xs text-gray-600 max-w-xs">{{ $company['address'] }}</p>
+                <p class="mt-2 text-xs text-gray-600 max-w-xs">{{ $company['address'] }}</p>
                 <p class="text-xs text-gray-600">
                     Phone: {{ $company['phone'] }}
                     @if($company['email']) &middot; {{ $company['email'] }} @endif

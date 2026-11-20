@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Support\PartyPayment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SupplierController extends Controller
@@ -82,13 +83,23 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier): RedirectResponse
     {
-        if ($supplier->purchases()->exists() || $supplier->transactions()->exists()) {
-            return back()->with('error', 'This supplier has purchase or payment history and cannot be deleted.');
-        }
+        // Their purchases, payments and stock log go too, so Finance and Reports stop counting them.
+        // Product stock is left as it is: the goods really arrived.
+        $purchases = $supplier->purchases()->count();
 
-        $supplier->delete();
+        DB::transaction(function () use ($supplier) {
+            foreach ($supplier->purchases as $purchase) {
+                $purchase->stockMovements()->delete();
+                $purchase->transactions()->delete();
+                $purchase->delete();
+            }
+            $supplier->transactions()->delete();
+            $supplier->delete();
+        });
 
-        return redirect()->route('suppliers.index')->with('status', 'Supplier deleted.');
+        return redirect()->route('suppliers.index')->with('status', $purchases
+            ? 'Supplier deleted, along with '.$purchases.' '.str('purchase')->plural($purchases).' and their payments.'
+            : 'Supplier deleted.');
     }
 
     public function storePayment(Request $request, Supplier $supplier): RedirectResponse

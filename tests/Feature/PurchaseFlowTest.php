@@ -129,14 +129,10 @@ class PurchaseFlowTest extends TestCase
         $this->assertSame('payment_out', Transaction::latest('id')->first()->type);
     }
 
-    public function test_supplier_with_history_cannot_be_deleted(): void
+    public function test_supplier_without_history_can_be_deleted(): void
     {
-        $this->createPurchase('ordered');
-        $this->delete(route('suppliers.destroy', $this->supplier))->assertSessionHas('error');
-        $this->assertNotNull($this->supplier->fresh());
-
         $fresh = Supplier::create(['name' => 'Sind Oil Distributors']);
-        $this->delete(route('suppliers.destroy', $fresh))->assertRedirect(route('suppliers.index'));
+        $this->delete(route('suppliers.destroy', $fresh))->assertRedirect(route('suppliers.index'))->assertSessionHas('status', 'Supplier deleted.');
         $this->assertNull($fresh->fresh());
     }
 

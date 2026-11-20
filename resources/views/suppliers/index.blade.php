@@ -91,7 +91,13 @@
                                     <a href="{{ route('suppliers.show', $supplier->id) }}" class="text-jesco-600 hover:underline text-sm font-medium">View</a>
                                     <a href="{{ route('suppliers.edit', $supplier->id) }}" class="text-jesco-600 hover:underline text-sm font-medium">Edit</a>
                                     <button type="button"
-                                            @click="$dispatch('confirm-delete', { url: '{{ route('suppliers.destroy', $supplier->id) }}', name: '{{ addslashes($supplier->name) }}' })"
+                                            @click="$dispatch('confirm-delete', @js([
+                                                'url' => route('suppliers.destroy', $supplier->id),
+                                                'name' => $supplier->name,
+                                                'body' => $supplier->purchases_count
+                                                    ? 'Their '.$supplier->purchases_count.' '.Str::plural('purchase', $supplier->purchases_count).' and all payments will also be deleted, and Finance and Reports will stop counting them. Product stock stays as it is. This cannot be undone.'
+                                                    : null,
+                                            ]))"
                                             class="text-rose-600 hover:underline text-sm font-medium">
                                         Delete
                                     </button>

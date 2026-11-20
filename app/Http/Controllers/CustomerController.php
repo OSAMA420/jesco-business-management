@@ -8,6 +8,7 @@ use App\Support\PartyPayment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -97,13 +98,23 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer): RedirectResponse
     {
-        if ($customer->orders()->exists() || $customer->transactions()->exists()) {
-            return back()->with('error', 'This customer has order or transaction history and cannot be deleted.');
-        }
+        // Their orders, payments and stock log go too, so Finance and Reports stop counting them.
+        // Product stock is left as it is: the goods were really sold.
+        $orders = $customer->orders()->count();
 
-        $customer->delete();
+        DB::transaction(function () use ($customer) {
+            foreach ($customer->orders as $order) {
+                $order->stockMovements()->delete();
+                $order->transactions()->delete();
+                $order->delete();
+            }
+            $customer->transactions()->delete();
+            $customer->delete();
+        });
 
-        return redirect()->route('customers.index')->with('status', 'Customer deleted.');
+        return redirect()->route('customers.index')->with('status', $orders
+            ? 'Customer deleted, along with '.$orders.' '.str('order')->plural($orders).' and their payments.'
+            : 'Customer deleted.');
     }
 
     public function storePayment(Request $request, Customer $customer): RedirectResponse

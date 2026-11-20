@@ -72,7 +72,13 @@
                                     <a href="{{ route('customers.show', $customer) }}" class="text-jesco-600 hover:underline text-sm font-medium">View</a>
                                     <a href="{{ route('customers.edit', $customer) }}" class="text-jesco-600 hover:underline text-sm font-medium">Edit</a>
                                     <button type="button"
-                                            @click="$dispatch('confirm-delete', { url: '{{ route('customers.destroy', $customer) }}', name: '{{ addslashes($customer->name) }}' })"
+                                            @click="$dispatch('confirm-delete', @js([
+                                                'url' => route('customers.destroy', $customer),
+                                                'name' => $customer->name,
+                                                'body' => $customer->orders_count
+                                                    ? 'Their '.$customer->orders_count.' '.Str::plural('order', $customer->orders_count).' and all payments will also be deleted, and Finance and Reports will stop counting them. Product stock stays as it is. This cannot be undone.'
+                                                    : null,
+                                            ]))"
                                             class="text-rose-600 hover:underline text-sm font-medium">
                                         Delete
                                     </button>

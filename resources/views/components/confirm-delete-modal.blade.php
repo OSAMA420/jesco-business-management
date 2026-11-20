@@ -1,8 +1,8 @@
 @props(['title' => 'Delete this item?', 'body' => 'This action cannot be undone.'])
 
 <div
-    x-data="{ open: false, url: '', name: '' }"
-    x-on:confirm-delete.window="open = true; url = $event.detail.url; name = $event.detail.name ?? ''"
+    x-data="{ open: false, url: '', name: '', body: '' }"
+    x-on:confirm-delete.window="open = true; url = $event.detail.url; name = $event.detail.name ?? ''; body = $event.detail.body ?? ''"
     x-on:keydown.escape.window="open = false"
     x-show="open"
     x-cloak
@@ -39,7 +39,7 @@
                 </div>
                 <div class="pt-1.5">
                     <h3 class="text-base font-semibold text-gray-900" x-text="name ? ('Delete ' + name + '?') : @js($title)"></h3>
-                    <p class="mt-1 text-sm text-gray-500">{{ $body }}</p>
+                    <p class="mt-1 text-sm text-gray-500" x-text="body || @js($body)"></p>
                 </div>
             </div>
 
